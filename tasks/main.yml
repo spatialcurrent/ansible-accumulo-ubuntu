@@ -1,0 +1,204 @@
+---
+
+- name: Install Basic Libraries
+  become: yes
+  become_user: root
+  apt: name="{{ item }}" state=latest
+  with_items:
+    - ssh
+    - rsync
+
+- name: "Download Files"
+  become: yes
+  become_user: root
+  get_url:
+    url: "{{ ACCUMULO_URL }}"
+    dest: "{{ ACCUMULO_DEST }}"
+    checksum: "{{ ACCUMULO_CHECKSUM }}"
+
+- name: "Unzip Accumulo"
+  become: yes
+  become_user: root
+  unarchive:
+    src: "{{ ACCUMULO_DEST }}"
+    dest: "/opt"
+    copy: no
+
+- name: "Force owner for accumulo to root"
+  become: yes
+  become_user: root
+  file:
+    path: "/opt/accumulo-1.8.1"
+    state: directory
+    recurse: yes
+    owner: root
+    group: root
+
+- name: Stop accumulo
+  become: yes
+  become_user: "{{ ACCUMULO_USER }}"
+  shell: ". .bashrc && bin/stop-all.sh"
+  args:
+    chdir: "{{ ACCUMULO_HOME }}"
+  when: ACCUMULO_STOP | bool
+  failed_when: false
+
+- name: "Ensure {{ ACCUMULO_HOME }} exists"
+  become: yes
+  become_user: root
+  file:
+    path: "{{ ACCUMULO_HOME }}"
+    state: directory
+
+- name: "Copy accumulo from /opt into /usr/local"
+  become: yes
+  become_user: root
+  shell: "cp -R /opt/accumulo-1.8.1/* {{ ACCUMULO_HOME }}/"
+
+- name: Create Accumulo Group
+  become: yes
+  become_user: root
+  user:
+    name: "{{ ACCUMULO_USER }}"
+    state: present
+
+- name: Create Accumulo User
+  become: yes
+  become_user: root
+  user:
+    name: "{{ ACCUMULO_USER }}"
+    state: present
+    group: "{{ ACCUMULO_USER }}"
+    home: "{{ ACCUMULO_HOME }}"
+    shell: /bin/bash
+
+- name: "Check accumulo's .ssh directory"
+  become: yes
+  become_user: root
+  file:
+    path: "{{ ACCUMULO_HOME }}/.ssh"
+    state: directory
+    owner: "{{ ACCUMULO_USER }}"
+    group: "{{ ACCUMULO_USER }}"
+
+- name: "Copy over SSH Keys"
+  become: yes
+  become_user: root
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ ACCUMULO_USER }}"
+    group: "{{ ACCUMULO_USER }}"
+    mode: 0400
+  with_items:
+    - src: "{{ HADDOP_ID_RSA }}"
+      dest: "{{ ACCUMULO_HOME }}/.ssh/id_rsa"
+    - src: "{{ HADDOP_ID_RSA }}.pub"
+      dest: "{{ ACCUMULO_HOME }}/.ssh/id_rsa.pub"
+
+- name: "Configure accumulo ~/.profile"
+  become: yes
+  become_user: root
+  copy:
+    src: profile
+    dest: "{{ ACCUMULO_HOME }}/.profile"
+    owner: "{{ ACCUMULO_USER }}"
+    group: "{{ ACCUMULO_USER }}"
+    mode: 0755
+
+- name: "Configure accumulo user environment"
+  become: yes
+  become_user: root
+  template:
+    src: bashrc.j2
+    dest: "{{ ACCUMULO_HOME }}/.bashrc"
+    owner: "{{ ACCUMULO_USER }}"
+    group: "{{ ACCUMULO_USER }}"
+    mode: 0755
+
+- name: "Copy over basic accumulo configuration" # Always run, since will be patched
+  become: yes
+  become_user: root
+  shell: "cp ./examples/512MB/standalone/* ."
+  args:
+    chdir: "{{ ACCUMULO_HOME }}/conf"
+
+- name: "Template Accumulo Configuration"
+  become: yes
+  become_user: root
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ ACCUMULO_USER }}"
+    group: "{{ ACCUMULO_USER }}"
+    mode: "{{ item.mode }}"
+  with_items:
+    - src: accumulo-site.xml.j2
+      dest: "{{ ACCUMULO_HOME }}/conf/accumulo-site.xml"
+      mode: "0644"
+    - src: accumulo-env.sh.j2
+      dest: "{{ ACCUMULO_HOME }}/conf/accumulo-env.sh"
+      mode: "0755"
+    - src: masters.j2
+      dest: "{{ ACCUMULO_HOME }}/conf/masters"
+      mode: "0644"
+    - src: slaves.j2
+      dest: "{{ ACCUMULO_HOME }}/conf/slaves"
+      mode: "0644"
+
+- name: "Patch accumulo environment settings"
+  become: yes
+  become_user: root
+  lineinfile:
+    dest: "{{ ACCUMULO_HOME }}/conf/accumulo-env.sh"
+    regexp: "export(\\s+)ACCUMULO_MONITOR_BIND_ALL(\\s*)="
+    line: "export ACCUMULO_MONITOR_BIND_ALL=\"true\""
+
+- name: "Check owner for accumulo"
+  become: yes
+  become_user: root
+  file:
+    path: "{{ ACCUMULO_HOME }}"
+    state: directory
+    recurse: yes
+    owner: "{{ ACCUMULO_USER }}"
+    group: "{{ ACCUMULO_USER }}"
+
+- name: "Check mode for accumulo logs"
+  become: yes
+  become_user: root
+  file:
+    path: "{{ ACCUMULO_HOME }}/logs"
+    state: directory
+    recurse: yes
+    mode: 0755
+
+- name: "Patch security limits (/etc/security/limits.d/accumulo.conf)"
+  become: yes
+  become_user: root
+  lineinfile:
+    dest: "/etc/security/limits.d/accumulo.conf"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    create: yes
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - regexp: "^{{ ACCUMULO_USER }}(\\s+)soft"
+      line: "{{ ACCUMULO_USER }} soft nofile 32768"
+    - regexp: "^{{ ACCUMULO_USER }}(\\s+)hard"
+      line: "{{ ACCUMULO_USER }} hard nofile 65536"
+
+- name: Intialize /accumulo in hdfs
+  become: yes
+  become_user: "{{ HADOOP_USER }}"
+  shell: "{{ item }}"
+  with_items:
+    - ". .bashrc && bin/hadoop fs -mkdir {{ ACCUMULO_HDFS_PATH }}"
+    - ". .bashrc && bin/hadoop fs -chown {{ ACCUMULO_USER }}:{{ ACCUMULO_USER }} {{ ACCUMULO_HDFS_PATH }}"
+    - ". .bashrc && bin/hadoop fs -chmod 775 {{ ACCUMULO_HDFS_PATH }}"
+  args:
+    chdir: "{{ HADOOP_HOME }}"
+  when: ACCUMULO_INIT | bool
+  failed_when: false

@@ -1,0 +1,26 @@
+---
+
+HADOOP_USER: hadoop
+HADOOP_HOME: "/usr/local/hadoop"
+HADDOP_ID_RSA: "secret/hadoop_id_rsa"
+HADOOP_JAVA_HOME: "/usr/lib/jvm/java-8-openjdk-amd64/jre/"
+ACCUMULO_USER: "accumulo"  # OS and Hadoop User
+ACCUMULO_LIB: "/usr/local/accumulo/lib"
+ACCUMULO_HOME: "/usr/local/accumulo"
+ACCUMULO_URL: "http://mirror.cc.columbia.edu/pub/software/apache/accumulo/1.8.1/accumulo-1.8.1-bin.tar.gz"
+ACCUMULO_CHECKSUM: "sha256:eba3bfe823935ca7901ea7c2bd59c84a68b9381361699c7e260bbd9191f237f4"
+ACCUMULO_ZOOKEEPER_TIMEOUT: 30s
+ACCUMULO_DEST: "/opt/accumulo-1.8.1-bin.tar.gz"
+ACCUMULO_MASTER: "locahost"
+ACCUMULO_SLAVES:
+  - "localhost"
+ACCUMULO_HDFS_PATH: "/accumulo"
+ZOOKEEPER_HOME: "/usr/local/zookeeper"
+ZOOKEEPER_HOST: localhost
+ZOOKEEPER_PORT: 2181
+ACCUMULO_TSERVER_XMX: 384m
+ACCUMULO_MASTER_XMX: 128m
+ACCUMULO_MONITOR_XMX: 64m
+ACCUMULO_STOP: true
+ACCUMULO_START: false
+ACCUMULO_INIT: false
