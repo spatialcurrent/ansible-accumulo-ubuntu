@@ -23,7 +23,7 @@
 
   <property>
     <name>instance.volumes</name>
-    <value>{{ ACCUMULO_INSTANCE_VOLUMES }}</value>
+    <value>hdfs://{{ HADOOP_HOST }}:9000{{ ACCUMULO_HDFS_PATH }}</value>
     <description>comma separated list of URIs for volumes. example: hdfs://localhost:9000/accumulo</description>
   </property>
 

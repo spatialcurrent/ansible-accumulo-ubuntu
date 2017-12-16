@@ -37,14 +37,14 @@ fi
 # hadoop-2.0:
 test -z "$HADOOP_CONF_DIR"       && export HADOOP_CONF_DIR="$HADOOP_PREFIX/etc/hadoop"
 
-test -z "$JAVA_HOME"             && export JAVA_HOME=/path/to/java
+test -z "$JAVA_HOME"             && export JAVA_HOME={{ HADOOP_JAVA_HOME }}
 test -z "$ZOOKEEPER_HOME"        && export ZOOKEEPER_HOME={{ ZOOKEEPER_HOME }}
 test -z "$ACCUMULO_LOG_DIR"      && export ACCUMULO_LOG_DIR=$ACCUMULO_HOME/logs
 if [[ -f ${ACCUMULO_CONF_DIR}/accumulo.policy ]]
 then
    POLICY="-Djava.security.manager -Djava.security.policy=${ACCUMULO_CONF_DIR}/accumulo.policy"
 fi
-test -z "$ACCUMULO_TSERVER_OPTS" && export ACCUMULO_TSERVER_OPTS="${POLICY} -Xmx{{ ACCUMULO_TSERVER_XMX }} -Xms{{ ACCUMULO_TSERVER_XMX }} "
+test -z "$ACCUMULO_TSERVER_OPTS" && export ACCUMULO_TSERVER_OPTS="${POLICY} -Xmx{{ ACCUMULO_TSERVER_XMX }} -Xms{{ ACCUMULO_TSERVER_XMX }} {{ ACCUMULO_TSERVER_OPTS }}"
 test -z "$ACCUMULO_MASTER_OPTS"  && export ACCUMULO_MASTER_OPTS="${POLICY} -Xmx{{ ACCUMULO_MASTER_XMX }} -Xms{{ ACCUMULO_MASTER_XMX }}"
 test -z "$ACCUMULO_MONITOR_OPTS" && export ACCUMULO_MONITOR_OPTS="${POLICY} -Xmx{{ ACCUMULO_MONITOR_XMX }} -Xms{{ ACCUMULO_MONITOR_XMX }}"
 test -z "$ACCUMULO_GC_OPTS"      && export ACCUMULO_GC_OPTS="-Xmx64m -Xms64m"

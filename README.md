@@ -8,7 +8,7 @@
 
 **SSH**
 
-Hadoop uses SSH keys to securely communicate between the components.  The SSH key should be created on the control machine and then securely uploaded to the target machines.  For example, to create a SSH key, run `ssh-keygen -P ''` and then use `haddop_id_rsa` as the name when prompted.  The `HADOOP_ID_RSA` variable should be the path to this newly created key.  Be sure to exclude this key with `.gitignore`, `.dockerignore`, or save it outside of your playbook repo.  By default the variable points to `secret/hadoop_id_rsa` and Ansible will test the path directly under the playbook file.
+Hadoop uses SSH keys to securely communicate between the components.  The SSH key should be created on the control machine and then securely uploaded to the target machines.  For example, to create a SSH key, run `ssh-keygen -P ''` and then use `hadoop_id_rsa` as the name when prompted.  The `HADOOP_ID_RSA` variable should be the path to this newly created key.  Be sure to exclude this key with `.gitignore`, `.dockerignore`, or save it outside of your playbook repo.  By default the variable points to `secret/hadoop_id_rsa` and Ansible will test the path directly under the playbook file.
 
 **Playbook**
 

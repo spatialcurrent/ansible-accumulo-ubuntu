@@ -36,8 +36,8 @@
 
 - name: Stop accumulo
   become: yes
-  become_user: "{{ ACCUMULO_USER }}"
-  shell: ". .bashrc && bin/stop-all.sh"
+  become_user: root
+  shell: "su - {{ ACCUMULO_USER }} -c \". {{ ACCUMULO_HOME }}/.bashrc && {{ ACCUMULO_HOME }}/bin/stop-all.sh\""
   args:
     chdir: "{{ ACCUMULO_HOME }}"
   when: ACCUMULO_STOP | bool
@@ -91,9 +91,9 @@
     group: "{{ ACCUMULO_USER }}"
     mode: 0400
   with_items:
-    - src: "{{ HADDOP_ID_RSA }}"
+    - src: "{{ HADOOP_ID_RSA }}"
       dest: "{{ ACCUMULO_HOME }}/.ssh/id_rsa"
-    - src: "{{ HADDOP_ID_RSA }}.pub"
+    - src: "{{ HADOOP_ID_RSA }}.pub"
       dest: "{{ ACCUMULO_HOME }}/.ssh/id_rsa.pub"
 
 - name: "Configure accumulo ~/.profile"
@@ -144,6 +144,9 @@
       mode: "0644"
     - src: slaves.j2
       dest: "{{ ACCUMULO_HOME }}/conf/slaves"
+      mode: "0644"
+    - src: tracers.j2
+      dest: "{{ ACCUMULO_HOME }}/conf/tracers"
       mode: "0644"
 
 - name: "Patch accumulo environment settings"
